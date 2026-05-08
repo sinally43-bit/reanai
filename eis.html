@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>តេស្តភាសាអង់គ្លេស ថ្នាក់ទី១០</title>
+    <style>
+        body {
+            font-family: 'Kantumruy Pro', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .quiz-container {
+            background-color: white;
+            width: 100%;
+            max-width: 600px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h2 { text-align: center; color: #1a73e8; }
+        .instruction {
+            background: #e8f0fe;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+        .question { display: none; }
+        .question.active { display: block; }
+        .question-text { font-weight: bold; font-size: 1.2em; margin-bottom: 15px; }
+        .options { list-style: none; padding: 0; }
+        .options li {
+            margin-bottom: 10px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .options li:hover { background-color: #f8f9fa; border-color: #1a73e8; }
+        .options li.selected { background-color: #1a73e8; color: white; border-color: #1a73e8; }
+        
+        .buttons { display: flex; justify-content: space-between; margin-top: 20px; }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .btn-skip { background-color: #6c757d; color: white; }
+        .btn-next { background-color: #28a745; color: white; }
+        
+        #result-container { display: none; text-align: center; }
+        .score-box { font-size: 2em; font-weight: bold; margin: 20px 0; color: #1a73e8; }
+        .details { text-align: left; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <h2>តេស្តភាសាអង់គ្លេស ថ្នាក់ទី១០</h2>
+    
+    <div class="instruction">
+        <strong>ការណែនាំ៖</strong> មាន ១០ សំណួរ (សរុប ២០ ពិន្ទុ)។ <br>
+        - ឆ្លើយត្រូវ៖ <strong>+២ ពិន្ទុ</strong> <br>
+        - ឆ្លើយខុស៖ <strong>-១ ពិន្ទុ</strong> <br>
+        - រំលង៖ <strong>០ ពិន្ទុ</strong>
+    </div>
+
+    <div id="quiz-box">
+        <!-- Questions will be injected here by JS -->
+    </div>
+
+    <div class="buttons" id="nav-buttons">
+        <button class="btn-skip" onclick="skipQuestion()">រំលង (Skip)</button>
+        <button class="btn-next" onclick="nextQuestion()">បន្ទាប់ (Next)</button>
+    </div>
+
+    <div id="result-container">
+        <h3>លទ្ធផលរបស់អ្នក</h3>
+        <div class="score-box" id="final-score">0 / 20</div>
+        <div class="details" id="score-details"></div>
+        <button style="background:#1a73e8; color:white; margin-top:20px;" onclick="location.reload()">ធ្វើឡើងវិញ</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { q: "1. I ______ in Phnom Penh since 2010.", a: "have lived", options: ["live", "lived", "have lived", "am living"] },
+        { q: "2. If it ______ tomorrow, we will stay at home.", a: "rains", options: ["rain", "rains", "will rain", "rained"] },
+        { q: "3. Angkor Wat is ______ temple in the world.", a: "the largest", options: ["large", "larger", "the largest", "most large"] },
+        { q: "4. A person who comes from Thailand is ______.", a: "Thai", options: ["Thailander", "Thailandish", "Thai", "Thais"] },
+        { q: "5. You ______ wear a helmet when you ride a motorbike.", a: "must", options: ["must", "might", "could", "shall"] },
+        { q: "6. Yesterday, my father ______ to Siem Reap for work.", a: "went", options: ["go", "goes", "gone", "went"] },
+        { q: "7. How ______ does this T-shirt cost?", a: "much", options: ["many", "much", "long", "often"] },
+        { q: "8. I enjoy ______ football with my friends on weekends.", a: "playing", options: ["play", "to play", "playing", "played"] },
+        { q: "9. Mount Aural is the ______ mountain in Cambodia.", a: "highest", options: ["high", "higher", "highest", "most high"] },
+        { q: "10. She ______ her homework before going to bed every night.", a: "does", options: ["do", "does", "did", "done"] }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let skipCount = 0;
+    let selectedAnswer = null;
+
+    const quizBox = document.getElementById('quiz-box');
+
+    function loadQuestion() {
+        selectedAnswer = null;
+        const qData = questions[currentIdx];
+        let html = `
+            <div class="question active">
+                <div class="question-text">${qData.q}</div>
+                <ul class="options">
+                    ${qData.options.map(opt => `<li onclick="selectOption(this, '${opt}')">${opt}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+        quizBox.innerHTML = html;
+    }
+
+    function selectOption(el, val) {
+        const allOptions = document.querySelectorAll('.options li');
+        allOptions.forEach(li => li.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedAnswer = val;
+    }
+
+    function nextQuestion() {
+        if (selectedAnswer === null) {
+            alert("សូមជ្រើសរើសចម្លើយមួយ ឬចុច 'រំលង'");
+            return;
+        }
+
+        if (selectedAnswer === questions[currentIdx].a) {
+            score += 2;
+            correctCount++;
+        } else {
+            score -= 1;
+            wrongCount++;
+        }
+        
+        moveToNext();
+    }
+
+    function skipQuestion() {
+        skipCount++;
+        moveToNext();
+    }
+
+    function moveToNext() {
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            loadQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('quiz-box').style.display = 'none';
+        document.getElementById('nav-buttons').style.display = 'none';
+        document.getElementById('result-container').style.display = 'block';
+        
+        document.getElementById('final-score').innerText = `${score} / 20`;
+        document.getElementById('score-details').innerHTML = `
+            <p>✅ ឆ្លើយត្រូវ: ${correctCount} សំណួរ (+${correctCount * 2} ពិន្ទុ)</p>
+            <p>❌ ឆ្លើយខុស: ${wrongCount} សំណួរ (-${wrongCount} ពិន្ទុ)</p>
+            <p>⏭️ រំលង: ${skipCount} សំណួរ (0 ពិន្ទុ)</p>
+        `;
+    }
+
+    // Start Quiz
+    loadQuestion();
+</script>
+
+</body>
+</html>
